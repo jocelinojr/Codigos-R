@@ -1,10 +1,18 @@
 #########################################################################
+
+# instala pacotes
+install.packages("xlsx")
+
+
 # Carrega as bibliotecas
 
 library(readxl)
 library(dplyr)
 library(magrittr)
 library(tidyverse)
+library(xlsx)
+
+getwd()
 
 # lê o arquivo 
 processos <- read_excel("fundef_processos.xls")
@@ -12,17 +20,18 @@ processos <- read_excel("fundef_processos.xls")
 
 
 class(processos)
-?data.frame
 
 
 
 # sumariza os dados por vara
 (by_vara <- processos %>% 
+           filter(!is.na(Vara)) %>%
            group_by(Vara) %>% 
            summarise(quant = n()) %>%
-           arrange(desc(quant)) )
+           arrange(Vara, quant))
 
-
+# exporta para uma planilha
+write.xlsx(by_vara, file = "por_vara.xls")
 
 
 
