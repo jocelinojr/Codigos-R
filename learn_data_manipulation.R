@@ -71,7 +71,7 @@ flew_houston <- filter(flights, dest %in% c("IAH", "HOU"))
 summer_months <- c(7, 8, 9)
 summer_departs <- filter(flights, month %in% summer_months)
 
-# com o pipe
+m# com o pipe
 summer_departs1 <-  flights %>% filter(month %in% summer_months) 
 
 # Arrived more than two hours late, but didn't leave late
@@ -102,6 +102,29 @@ flights %>% select(., year, dep_time, day)
 (select(flights, day:arr_time))
 
 # we can even use regular expressions to select columns names!
+
+?flights
+# cria uma nova variável com a diferença 
+(flights %>% 
+    select(arr_time, dep_time, air_time, arr_delay, dep_delay) %>%
+    mutate(air_calc = arr_time - dep_time) %>%
+    mutate(air_dif =  air_calc - air_time)
+  )
+
+
+# investigando a relação entre distância percorrida e atraso médio
+by_dest <- group_by(flights, dest)
+delay <- summarise(by_dest, 
+                   qtde = n(), 
+                   distancia_media = mean(distance, na.rm = TRUE),
+                   atraso_medio = mean(arr_delay, na.rm = TRUE))
+# pega os maiores atrasos
+delay <- filter(delay, qtde > 20, dest !="HNL")
+
+ggplot(data = delay, mapping = aes(x = distancia_media, y =atraso_medio)) +
+  geom_point(aes(size=qtde), alpha = 1/2) +
+  geom_smooth(se= FALSE)
+  
 
 
 
