@@ -1,3 +1,7 @@
+################################################################################
+install.packages("nycflights13")
+
+
 ###############################################################################
 library(tidyverse)
 library(nycflights13)
@@ -5,17 +9,21 @@ library(dplyr)
 library(magrittr)
 
 
+###############################################################################
+# dados do ambiente
 
-##############################################################################
-# Code begins
+# pega qual é a pasta atual de traballho
+getwd()
+# lista os arquivos da pasta atual
+list.files()
+
 
 
 # Open the dataset in the RStudio Viewer
 View(flights)
 
 
-# Taking a look in the dataset
-flights
+
 
 # The six verbs of the data manipulation grammar (language) of dplyr
 # filter, select,  arrange, mutate, summarise, group_by
@@ -126,9 +134,48 @@ ggplot(data = delay, mapping = aes(x = distancia_media, y =atraso_medio)) +
   geom_smooth(se= FALSE)
   
 
+#################################################################################
+# trabalhando no arquivo de convênios do portal da transparência
+
+
+##################################################################################
+# Para ler o arquivo corretamente, é preciso:
+# 1 - Usar csv2, para csv separados por ";"
+# 2 - muda o locale para modificar a codificação do arquivo para ISO-8859-1
+
+convenios <- read_csv2("20180907_Convenios.csv", locale = locale(encoding = 'ISO-8859-1'))
+
+# filtra apenas os da PB
+convenios_PB <- convenios %>%
+  filter(UF == "PB")
+
+# conhecendo nosso data.frame
+str(convenios_PB)
+
+# converte nosso dataframe para uma tibble
+conv_pb_ti <- as_tibble(convenios_PB)
+conv_pb_ti
+
+# column names that doesn't fit in R paterns can be refered to using backticks ``
+str(conv_pb_ti)
+
+conv_pb_ti$`DATA FINAL VIGÊNCIA` <- as.date(conv_pb_ti$`DATA FINAL VIGÊNCIA`)
+View(conv_pb_ti)
+
+
+por_muni <- conv_pb_ti %>%
+  group_by(`NOME MUNICÍPIO`) %>%
+  filter(`SITUAÇÃO CONVÊNIO` == "EM EXECUÇÃO")  %>%
+  #filter(`VALOR LIBERADO` > 1000000) %>%
+  summarise(qt_conv = n(), total_libe = sum(`VALOR LIBERADO`)) %>%
+  arrange(desc(total_libe))
 
 
 
+
+ggplot(data=por_muni, mapping = aes(x = qt_conv, y = total_libe )) +
+  geom_point(alpha = 1/2) +
+  geom_smooth(se= FALSE)
 
 
 
