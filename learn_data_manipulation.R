@@ -132,7 +132,7 @@ delay <- filter(delay, qtde > 20, dest !="HNL")
 ggplot(data = delay, mapping = aes(x = distancia_media, y =atraso_medio)) +
   geom_point(aes(size=qtde), alpha = 1/2) +
   geom_smooth(se= FALSE)
-  
+
 
 #################################################################################
 # trabalhando no arquivo de convênios do portal da transparência
@@ -178,6 +178,47 @@ ggplot(data=por_muni, mapping = aes(x = qt_conv, y = total_libe )) +
   geom_smooth(se= FALSE)
 
 
+##################################################################
+# Exploratory Data Analysis
+
+# notando as variações no valor de variáveis CATEGÓRICAS (bar chart)
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+
+# obtendo a quantidade exata por meio da função count
+diamonds %>%
+  count(cut) %>%
+  arrange(desc(n))
+
+# notando as variações no valor de variáveis contínuas (Histograma)
+str(diamonds)
+ggplot(data = diamonds) + 
+  geom_histogram(mapping = aes(x = carat), binwidth = 0.5)
+
+# agrupando os valores numéricos em faixas (categorização de variáveis numéricas)
+diamonds %>%
+  count(cut_width(carat, 0.5)) %>%
+  arrange(desc(n))
+
+
+# dando um zoom nos diamantes pequenos
+pequenos <- diamonds %>% 
+             filter(carat <3)
+ggplot(data = pequenos, mapping = aes(x = carat)) + 
+  geom_histogram(binwidth = 0.1)
+
+
+# sobrepondo historgramas - usar linhas em vez de histogramas
+ggplot(data= pequenos, mapping = aes(x = carat, color = cut)) + 
+  geom_freqpoly(binwidth = 0.1)
+
+  
+
+
+
+  
+  
 
 
 
