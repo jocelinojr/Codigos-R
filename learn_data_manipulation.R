@@ -181,7 +181,7 @@ ggplot(data=por_muni, mapping = aes(x = qt_conv, y = total_libe )) +
 ##################################################################
 # Exploratory Data Analysis
 
-# notando as variações no valor de variáveis CATEGÓRICAS (bar chart)
+# notando as variações no valor de variáveis CATEGÓRICAS (usar BAR CHART)
 ggplot(data = diamonds) + 
   geom_bar(mapping = aes(x = cut))
 
@@ -197,9 +197,14 @@ ggplot(data = diamonds) +
   geom_histogram(mapping = aes(x = carat), binwidth = 0.5)
 
 # agrupando os valores numéricos em faixas (categorização de variáveis numéricas)
-diamonds %>%
-  count(cut_width(carat, 0.5)) %>%
-  arrange(desc(n))
+carat_categorizado <- diamonds %>%
+                        count(cut_width(carat, 0.5)) %>%
+                        arrange(desc(n))
+
+# colocando num gráfico (precisamos mudar o stat padrão do bar chart, que seria count)
+ggplot(data=carat_categorizado, mapping = aes(x = "", y=n, fill = `cut_width(carat, 0.5)`)) +
+  geom_bar(width = 0.75, stat = "identity" )
+
 
 
 # dando um zoom nos diamantes pequenos
@@ -212,6 +217,22 @@ ggplot(data = pequenos, mapping = aes(x = carat)) +
 # sobrepondo historgramas - usar linhas em vez de histogramas
 ggplot(data= pequenos, mapping = aes(x = carat, color = cut)) + 
   geom_freqpoly(binwidth = 0.1)
+
+# identificando padrões
+ggplot(data = pequenos, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.01)
+
+
+str(mtcars)
+
+mean(mtcars$mpg)
+
+ggplot(data=mtcars, mapping = aes(x = mpg)) +
+  geom_histogram(binwidth = 5)
+
+mtcars %>%
+  count(cut_width(mpg, 5))
+
 
   
 
