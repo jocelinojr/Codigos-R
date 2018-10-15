@@ -234,12 +234,64 @@ mtcars %>%
   count(cut_width(mpg, 5))
 
 
+# OUTLIERS ################################################
+
+
+# Explorando a variável y
+ggplot(data = diamonds, mapping = aes(x = y)) + 
+  geom_histogram(binwidth = 0.5)
+
+# dando um zoom nos valores que raramente aparecem
+ggplot(data = diamonds, mapping = aes(x = y)) + 
+  geom_histogram(binwidth = 0.5) + 
+  coord_cartesian(ylim = c(0, 50))
+
   
+# Explorando x
+ggplot(data = diamonds, mapping = aes(x = x)) + 
+  geom_histogram(binwidth = 0.5)
+
+
+# Explorando z
+ggplot(data = diamonds, mapping = aes(x = z)) + 
+  geom_histogram(binwidth = 0.5)
 
 
 
-  
-  
+# vendo a distribuição em faixas
+diamonds %>% 
+  count(cut_width(x, 0.5)) %>%
+  arrange(desc(n))
+
+diamonds %>% 
+  count(cut_width(y, 0.5)) %>%
+  arrange(desc(n))
+
+diamonds %>% 
+  count(cut_width(z, 0.5)) %>%
+  arrange(desc(n))
+
+
+# Explorando o preço  dos diamantes
+ggplot(data=diamonds, mapping = aes(x = price, fill=cut)) +
+  geom_histogram(binwidth = 10000)
+
+price_by_cut <- diamonds %>%
+  count(cut_width(price, 10000), cut) %>%
+  arrange(`cut_width(price, 1000)`)
+
+
+# Explorando o preço  dos diamantes
+ggplot(data=diamonds, mapping = aes(x = price, fill=color)) +
+  geom_histogram(binwidth = 1000)
+
+
+# Explorando o preço  dos diamantes
+ggplot(data=diamonds, mapping = aes(x = carat, y = price)) +
+  geom_point(aes(color=cut)) + 
+  geom_smooth(se= FALSE)
+
+
 
 
 
