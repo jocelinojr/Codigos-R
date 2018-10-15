@@ -12,6 +12,7 @@ library(readxl)
 library(dplyr)
 library(magrittr)
 library(tidyverse)
+
 library(xlsx)
 library(officer)
 library(WordR)
@@ -120,31 +121,76 @@ write.table(selec_berna, file="2502052_Bernardino_filtro.csv", sep=";", row.name
 
 
 
-setwd("C:/Users/tcujjunior/Documents/R/Detalhes")
+
+###################################################################
+# Junta os arquivos de detalhes de pagamentos
+
+
+
+setwd("C:/Users/Jocelino Junior/Documents/R")
 getwd()
 
-df <- data.frame()
+# taking a look at the folder content
+list.files()
+
+# cria nossos data.frames para manipular os dados
+df_detalhes <- data.frame()
 df_exc <- data.frame()
 
-list.files()
+
+# lê o arquivo que tem os códigos do IBGE dos municípios
+munic_ibge <- read_excel('Municipios_IBGE.xlsx')
+# seleciona apenas as colunas que nos interessam
+munic_ibge <- select(munic_ibge, CODIBGE, Municipio)
+
+setwd("C:/Users/Jocelino Junior/Documents/R/Detalhes Pagamentos")
+
+# nome do arquivo de detalhes
+arq_detalhes <- "detalhes.csv"
+
+# verifica se temos o arquivo de detalhes já gerado...caso sim, apaga-o
+if (file.exists(arq_detalhes)) {
+   print("Apagando arquivo antigo de detalhes...")
+   file.remove(arq_detalhes)
+   print(paste("Arquivo ", arq_detalhes, " apagado com sucesso!"))
+} else {
+  print("Arquivo de detalhes sendo gerado pela primeira vez...") 
+}
+  
 
 for (arq in list.files()){
   print(arq)
   # pega o numero do municipio
   cod_mun <- str_sub(arq, 1, 7)
-  nome_mun <- str_sub(arq, 9, -1)
+  # pega o nome do município
+  nome_df <- munic_ibge %>% filter(CODIBGE == cod_mun) %>% select(Municipio)  
+  nome_str <- nome_df$Municipio
+  print(paste(cod_mun, nome_str))
   # lê o arquivo
   df_exc <- read_excel(arq)
   # inclui uma coluna para o codigo do municipio
   df_exc$CODIBGE <- cod_mun
+  df_exc$Municipio <- nome_str
   # acumula  no data.frame
-  df <- rbind(df, df_exc) 
+  df_detalhes <- rbind(df_detalhes, df_exc) 
 
-  }
+}
 
-(df %>%
+# gera o arquivo de saída com os detalhes reunidos
+write.table(df, file="detalhes.csv", sep=";", row.names = FALSE, dec = ",", fileEncoding = 'iso-8859-1')
+
+
+
+
+
+
+
+
+credores <- df %>%
    group_by(`Nome do Credor`) %>%
-   summarise(Pago = prettyNum(sum(Pago), scientific=FALSE, big.mark='.', decimal.mark = ',')))
+   summarise(Pago = sum(Pago)) %>%
+#   summarise(Pago = prettyNum(sum(Pago), scientific=FALSE, big.mark='.', decimal.mark = ',')) %>%
+               arrange(desc(Pago))
 
 
 write.table(df, file="sao_caiana_join.csv", sep=";", row.names = FALSE, dec = ",")
