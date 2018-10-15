@@ -123,16 +123,54 @@ write.table(selec_berna, file="2502052_Bernardino_filtro.csv", sep=";", row.name
 setwd("C:/Users/tcujjunior/Documents/R/Detalhes")
 getwd()
 
-planilhas <- list()
+df <- data.frame()
+df_exc <- data.frame()
+
+list.files()
 
 for (arq in list.files()){
   print(arq)
-  planilhas[length(planilhas)+1] <- read_excel(arq)
+  # pega o numero do municipio
+  cod_mun <- str_sub(arq, 1, 7)
+  nome_mun <- str_sub(arq, 9, -1)
+  # lê o arquivo
+  df_exc <- read_excel(arq)
+  # inclui uma coluna para o codigo do municipio
+  df_exc$CODIBGE <- cod_mun
+  # acumula  no data.frame
+  df <- rbind(df, df_exc) 
+
+  }
+
+(df %>%
+   group_by(`Nome do Credor`) %>%
+   summarise(Pago = prettyNum(sum(Pago), scientific=FALSE, big.mark='.', decimal.mark = ',')))
 
 
-}
+write.table(df, file="sao_caiana_join.csv", sep=";", row.names = FALSE, dec = ",")
 
-planilhas[1]
+
+##################################
+# trabalha com as transferencias de São José de Caiana
+
+list.files()
+
+transf_caiana <- read_excel('transf_sao_caiana.xls')
+str(transf_caiana)
+
+# total de transfe^rncias
+sum(transf_caiana %>% 
+  filter(Transf == "s") %>%
+  select(Valor))
+
+transf_caiana %>% 
+      group_by(Transf) %>%
+      summarise(Total = sum(Valor))
+      
+
+
+
+
 
 
 
