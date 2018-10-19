@@ -124,10 +124,10 @@ write.table(selec_berna, file="2502052_Bernardino_filtro.csv", sep=";", row.name
 
 ###################################################################
 # Junta os arquivos de detalhes de pagamentos
+###################################################################
 
 
-
-setwd("C:/Users/Jocelino Junior/Documents/R")
+setwd("C:/Users/tcujjunior/Documents/R")
 getwd()
 
 # taking a look at the folder content
@@ -139,11 +139,13 @@ df_exc <- data.frame()
 
 
 # lê o arquivo que tem os códigos do IBGE dos municípios
-munic_ibge <- read_excel('Municipios_IBGE.xlsx')
+munic_ibge <- read_excel('IBGE_2.xls')
 # seleciona apenas as colunas que nos interessam
 munic_ibge <- select(munic_ibge, CODIBGE, Municipio)
 
-setwd("C:/Users/Jocelino Junior/Documents/R/Detalhes Pagamentos")
+getwd()
+setwd("C:/Users/tcujjunior/Documents/R/Detalhes Pagamentos")
+
 
 # nome do arquivo de detalhes
 arq_detalhes <- "detalhes.csv"
@@ -177,10 +179,36 @@ for (arq in list.files()){
 }
 
 # gera o arquivo de saída com os detalhes reunidos
-write.table(df, file="detalhes.csv", sep=";", row.names = FALSE, dec = ",", fileEncoding = 'iso-8859-1')
+write.table(df_detalhes, file="detalhes.csv", sep=";", row.names = FALSE, dec = ",", fileEncoding = 'iso-8859-1')
+
+
+#########################################################################################
+# Lê o arquivo de detalhes para ver quem pagou Remuneração na educação
+#########################################################################################
+
+
+# filtra 
+filtro_remunera <- df_detalhes %>% 
+                  filter(Função == "Educação" & (Classificação %in% c("319011", "319091") )) %>%
+                  group_by(CODIBGE, Municipio) %>%
+                  summarise(quant = n())
 
 
 
+# Carrega o arquivo de Municípios que será usado no painel
+getwd()
+setwd("C:/Users/tcujjunior/Documents/R/")
+list.files()
+
+munic_painel <- read_excel("Municipios.xls")
+# converte o código do IBGE para caracter
+munic_painel$CODIBGE <- as.character(munic_painel$CODIBGE)
+
+
+# junta com o data.frame que tem os municipios que pagaram remuneração
+join_munic_remunera <- left_join(munic_painel, filtro_remunera, by="CODIBGE")
+
+join_munic_remunera$`Pagou Remuneracao`  <-  as.integer(join_munic_remunera$quant > 0)
 
 
 
@@ -213,6 +241,109 @@ transf_caiana %>%
       group_by(Transf) %>%
       summarise(Total = sum(Valor))
       
+
+
+
+
+###########################################################################
+# preenche os códigos do IBGE de uma planilha
+
+getwd()
+setwd("C:/Users/tcujjunior/Documents/R")
+list.files()
+
+
+# carrega a planilha de ADVOGADOS
+advogados <- read_excel("Advogados.xls")
+ibge <- read_excel("IBGE.xls")
+
+# converte o nome dos municípios para sem acento e maisuculo em ambas as tabelas
+advogados$Municipio.Clean <- iconv(advogados$Municipio, from= "UTF-8",  to="ASCII//TRANSLIT")
+ibge$Municipio.Clean <- str_to_upper(iconv(ibge$de_Ente, from= "UTF-8",  to="ASCII//TRANSLIT"))
+
+# junta as tabelas 
+join_ibge_adv <- inner_join(advogados, ibge, by=c("Municipio.Clean", "Municipio.Clean"))
+
+# copia o código do IBGE 
+join_ibge_adv$CODIBGE <- join_ibge_adv$cd_IBGE
+
+str(join_ibge_adv)
+
+# Seleciona apenas os campos que queremos
+advogados_new <- select(join_ibge_adv, -cd_Ente, -cd_IBGE, -de_Ente, -Id_Ente)
+
+# escreve nosso arquivo de saída
+write.table(advogados_new, file="Advogados.csv", sep=";", row.names = FALSE, dec = ",")
+
+###################################
+# Coloca o codigo IBGE nos de Placido
+
+
+# carrega a planilha de ADVOGADOS
+placido <- read_excel("mun_placido.xls")
+ibge <- read_excel("IBGE.xls")
+
+# converte o nome dos municípios para sem acento e maisuculo em ambas as tabelas
+placido$Municipio.Clean <- iconv(placido$Municipio, from= "UTF-8",  to="ASCII//TRANSLIT")
+ibge$Municipio.Clean <- str_to_upper(iconv(ibge$de_Ente, from= "UTF-8",  to="ASCII//TRANSLIT"))
+
+# junta as tabelas 
+join_ibge_pla <- inner_join(placido, ibge, by=c("Municipio.Clean", "Municipio.Clean"))
+
+# copia o código do IBGE 
+join_ibge_pla$CODIBGE <- join_ibge_pla$cd_IBGE
+
+
+# Seleciona apenas os campos que queremos
+join_ibge_pla
+
+# escreve nosso arquivo de saída
+write.table(join_ibge_pla, file="placido.csv", sep=";", row.names = FALSE, dec = ",")
+
+
+
+
+
+
+
+#############################################################################
+# Remove a última linha de TOTAIS dos arquivos de detalhes antes de juntá-los
+#############################################################################
+
+
+setwd("C:/Users/tcujjunior/Documents/R/Limpeza")
+getwd()
+
+# taking a look at the folder content
+list.files()
+
+# cria nossos data.frames para manipular os dados
+df_old <- data.frame()
+df_new <- data.frame()
+
+
+for (arq in list.files()){
+  print(arq)
+  # lê o arquivo
+  df_old <- read_excel(arq)
+
+}
+
+# A leitura só funciona quando o arquivo excel está no formato tabular
+df_old <- read_excel("2500734_Amparo (2).xls")
+df_old
+
+?read_excel
+
+
+# gera o arquivo de saída com os detalhes reunidos
+write.table(df_detalhes, file="detalhes.csv", sep=";", row.names = FALSE, dec = ",", fileEncoding = 'iso-8859-1')
+
+
+
+
+
+
 
 
 
