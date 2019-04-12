@@ -1,0 +1,547 @@
+---
+title: "Gráficos do Livro: Data Visualization"
+author: "Jocelino Júnior"
+date: "18 de março de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R Markdown
+
+Esse é um R Markdown contendo os principais gráficos com os respectivos 
+códigos do Livro Data Visualization de Kieran Healy (Duke University)
+acessível em https://socviz.co/
+
+
+
+### Bibliotecas necessárias para rodar 
+
+``` {r bibliotecas, message=FALSE }
+
+library(tidyverse)
+library(broom)
+library(coefplot)
+library(cowplot)
+library(GGally)
+library(ggrepel)
+library(ggridges)
+library(gridExtra)
+library(here)
+#library(interplot)
+library(margins)
+library(maps)
+library(mapproj)
+library(mapdata)
+library(MASS)
+library(quantreg)
+library(rlang)
+library(survey)
+library(srvyr)
+library(viridis)
+library(viridisLite)
+library(devtools)
+library(socviz)
+library(gapminder)
+library(ggplot2)
+library(scales)
+library(here)
+library(gapminder)
+library(dplyr)
+library(socviz)
+
+````
+
+### Gapminder
+
+
+Plotando life expectancy x gdpPercap
+
+Cria os objetos gráficos
+```{r gapminder1}
+
+p <- ggplot(data = gapminder, mapping = aes(x=gdpPercap, y=lifeExp)) +
+    theme_gray() # sets the default theme of ggplot
+
+# making a sccater plot
+p + geom_point()
+
+```
+
+
+
+desenha a smooth curve com o médoto default "gam"
+``` {r gapminder2, message=FALSE}
+p + geom_point() + geom_smooth()
+```
+
+
+desenha com o método lm (linear model)
+
+``` {r gapminder3}
+
+p + geom_point() + geom_smooth(method = "lm")
+```
+
+
+Mudando a escala no eixo x
+Reparar no parâmetro labels=comma. A opção "comma"" e "dollar"" formatam o número no eixo da escala. Para usá-las é preciso a biblioteca "scales"
+
+```{r gapminder4, fig.height=5, fig.width=10}
+
+p + geom_point(alpha=0.3) + geom_smooth(method = "gam") + 
+                   scale_x_log10(labels=comma) + 
+                  labs(x = "GDP per capita", y = "Life Expectancy",
+                       title="GDP x Life Expectancy", 
+                       subtitle="Data points are country years",
+                       caption="source: gapminder")  
+```
+
+
+Gráfico segregado por continente
+``` {r continente }
+
+# by continent
+p.cont <- ggplot(data = gapminder, mapping = aes(x=gdpPercap, 
+                                                 y=lifeExp,
+                                                 colour=continent)) +
+       theme_light() # use a dark theme
+
+p.cont + geom_point() + geom_smooth(method = "loess") +
+  scale_x_log10(labels=dollar)
+```
+
+
+Deixando apenas um "smooth"
+
+``` {r smooth1}
+p + geom_point(mapping = aes(colour=continent)) + 
+  geom_smooth(method = "loess") +  
+  scale_x_log10(label=dollar)
+```
+
+Mapeando a população como um gradiente numa escala logarítimica
+
+``` {r populacao}
+p + geom_point(mapping = aes(colour= log(pop))) + scale_x_log10(label=comma)
+
+p + geom_point(mapping = aes(colour= year)) + scale_x_log10(label=comma)
+
+p.cont + geom_jitter() + geom_boxplot() + scale_x_log10()
+
+
+# See how the Life Expectancy evolves over time per continent
+life.exp <- ggplot(data=gapminder, mapping = aes(x=continent, y=lifeExp)) 
+life.exp + geom_jitter(mapping = aes(colour=year)) + geom_boxplot() + 
+           labs(title="Expectativa de vida por continente nos anos") + 
+           theme_light()   
+
+# See how the Life Expectancy evolves over time per continent
+gdp <- ggplot(data=gapminder, mapping = aes(x=continent, y=gdpPercap))
+gdp + geom_jitter(mapping = aes(colour=year)) + geom_boxplot() + 
+  labs(title="GDP por continente nos anos")
+
+```
+
+
+Usando Facets para ver como o GDP dos países se comporta com o passar dos anos
+
+``` {r facets1, fig.height=8, fig.width=15}
+p2 <- ggplot(data=gapminder, mapping=aes(x=year, y=gdpPercap))
+p3 <- ggplot(data=gapminder, mapping=aes(x=year, y=lifeExp))
+# USando facet_warp em vez de facet_grid
+p2 + geom_line(aes(group=country)) + facet_wrap(~continent)
+```
+
+
+Melhorando o gráfico
+
+``` {r facets2, fig.height=8, fig.width=15 }
+p2 + geom_line(aes(group=country), colour="gray70") + 
+  geom_smooth(size=1.1, se=FALSE, method = "loess") + 
+  # muda a escala do eixo y, já que as linhas valores estão muito "pegadas"  
+  scale_y_log10(labels=dollar) + 
+  facet_wrap(~continent, ncol = 5) + 
+  labs(title="GDP per capita over time on Five Continents")
+
+```
+
+Muda a escala do eixo y, já que as linhas valores estão muito juntas
+
+``` {r escala1, fig.height=8, fig.width=15}  
+p3 + geom_line(aes(group=country), colour="gray70") + 
+  geom_smooth(size=1.1, se=FALSE, method = "loess") + 
+  facet_wrap(~continent, ncol = 5) + 
+  labs(title="Life Expectancy over time on Five Continents")
+```
+
+
+### Revisiting gapminder
+
+
+
+
+Selecionando alguns paises para comparação
+
+```{r fewcountries, fig.width=10, fig.height=5}
+
+dados <- subset(gapminder, subset=gapminder$country %in% c("China", "Afghanistan", "Ghana", "Brazil"))
+pnext <- ggplot(data= dados, mapping = aes(x=pop, y=gdpPercap, colour=continent))
+pnext + geom_point() + scale_x_log10(labels=comma) + 
+  scale_y_log10(labels=dollar) + theme_gray() +
+  facet_wrap(~country)
+
+```
+
+
+# Histogram 2D
+
+```{r}
+glimpse(gapminder)
+p <- ggplot(data = gapminder, mapping = aes(x=lifeExp, y=gdpPercap))
+p + geom_bin2d() + theme_light()
+
+```
+
+
+
+## Explorando o dataset gss_sm (pesquisa social nos USA)
+
+
+```{r gss.sm}
+
+p <- ggplot(data = gss_sm, mapping=aes(x=age, y=childs)) +
+   theme_gray()
+
+p + geom_point() + 
+  geom_smooth() + 
+  facet_grid(sex~race)
+```
+
+Assim não ficará correto
+
+```{r}
+pbar <- ggplot(data = gss_sm, mapping = aes(x=bigregion, fill=bigregion))
+pbar + geom_bar() + theme_gray()
+```
+
+
+
+Para ficar correto (mexemos na função estatística do eixo y, para pegar a proporção)
+
+```{r}
+pbar + geom_bar(mapping = aes(y = ..prop.., group=1))
+
+pbar <- ggplot(data = gss_sm, mapping = aes(x=religion, fill=religion))
+# Usamos guides(fill=FALSE) para tirar a legenda redundante
+pbar + geom_bar() + guides(fill=FALSE) + labs(title="Religion")
+
+```
+
+Mapeando religiao por região em barras
+
+```{r}
+pbar <- ggplot(data=gss_sm, mapping = aes(x = bigregion, 
+                                          fill=religion))
+pbar + geom_bar() + labs(title="Religion per Region - Stacked", subtitle="Não permite a adequada visualização das proporções")
+
+```
+
+
+
+Ajustando o preenchimento para facilitar a comparação entre as religiões dentro de cada região. No entanto, perdemos a capacidade de ver a proporção 
+de uma determinada religião em relação ao todo (país todo)
+
+
+```{r}
+
+pbar + geom_bar(position = "fill") + labs(title="Religion per Region - Stacked", subtitle="Permite a comparação de proporção dentro de cada grupo")
+
+
+# mudando o "position"
+pbar + geom_bar(position = "dodge")
+# muda novamente para ajustar a escala do eixo y
+pbar + geom_bar(position = "dodge", mapping = aes(y=..prop.., group=religion)) +
+  labs(title="Religions per Region", subtitle="Proporção relativa ao total")
+
+
+```
+
+Mostrando em facets
+
+```{r}
+pbar <- ggplot(data=gss_sm, mapping = aes(x=religion))
+pbar + geom_bar(position = "dodge", mapping = aes(y=..prop.., group=bigregion))+
+   facet_wrap(~bigregion, ncol=1)  
+
+```
+
+
+### Midwest  
+
+Comparando Histograms de dois estados americanos
+```{r}
+oh_wi <- c("OH", "WI")
+dados <- subset(midwest, subset = state %in% oh_wi)
+p2 <- ggplot(data = dados, mapping = aes(x = percollege, fill=state)) +
+      theme_gray()
+p2 + geom_histogram(alpha=0.4)
+
+```
+
+Kernel Density
+```{r}
+p <- ggplot(data =midwest, mapping=aes(x=area)) + theme_gray()
+p + geom_density()
+
+
+p <- ggplot(data=midwest, mapping = aes(x=area, fill=state, colour=state))
+p +   geom_density(alpha=0.3)
+
+
+```
+
+### Tabela com dados sumarizados do Titanic 
+
+When we have a summarized table, we "cancel" the default stats transformation by saying "identity" to the stat parameter
+
+
+```{r, message=FALSE}
+
+# Ploting the titanic summarized data in a bar chart using "identity"
+ptitanic <- ggplot(data = titanic, mapping = aes(x=fate, y=percent, 
+                                                 fill=sex))
+ptitanic + geom_bar(stat = "identity", position = "dodge") +
+  theme(legend.position = "top") + theme_light() + 
+  labs(title = "Titanic survivor statistics")
+
+
+```
+
+
+Monta um grid (facet) com sexo nas linhas e raça nas colunas
+
+```{r, message=FALSE}
+
+p0 <- ggplot(data = gss_sm, mapping = aes(x=wtssall))
+
+p0 + theme_light() + geom_histogram() + facet_grid(sex~race) + 
+   labs(title="Weight per Sex and Race", 
+        subtitle="Usando facet sex~race",
+        caption="Fonte: gapminder")
+```
+
+Monta o grid de outra forma
+```{r, message=FALSE}
+p0 + theme_light() + geom_histogram() + facet_grid(~sex+race)+
+  labs(title="Weight per Sex and Race", 
+       subtitle="Usando facet ~sex+race",
+       caption="Fonte: gapminder")
+
+```
+
+
+Experimentando outro geom (freqpoly) em vez do histogram
+
+```{r, message=FALSE}
+p0 + theme_light() + geom_freqpoly() + facet_wrap(~sex+race)
+
+```
+
+
+Dataset do OECD
+```{r, message=FALSE}
+p <- ggplot(data=oecd_sum, mapping = aes(x=year, y=diff, fill=hi_lo))
+p + geom_bar(stat = "identity") + theme_light() + 
+  labs(x="", y="Difference in years",
+       title="The US Life Expectancy Gap",
+       subtitle="Difference between US and OECD average life Expectancy: 1960-2015",
+       caption="Data: OECD") +
+  guides(fill=FALSE)  
+
+```
+
+Calcula a diferença em percentual para cada país
+
+```{r}
+
+oecd_sum$perc <-  (oecd_sum$diff / oecd_sum$usa) * 100
+```
+
+
+Plota as diferenças em percentuais 
+```{r, message=FALSE}
+
+p <- ggplot(data=oecd_sum, mapping = aes(x=year, y=perc, fill=hi_lo))
+p + geom_bar(stat = "identity") + theme_light() + 
+  labs(x="", y="Difference %",
+       title="The US Life Expectancy Gap %",
+       subtitle="Difference between US and OECD average life Expectancy: 1960-2015",
+       caption="Data: OECD") +
+  guides(fill=FALSE)  
+
+
+
+```
+
+
+
+Sumariza todas as variáveis numéricas Por país
+
+
+```{r}
+by_country <- organdata %>% group_by(consent_law, country) %>%
+              summarize_if(is.numeric, funs(mean, sd), na.rm=TRUE) %>%
+              ungroup()    
+p <- ggplot(data=by_country, mapping = aes(x = donors_mean, y=reorder(country, donors_mean)))
+p + geom_point(size=3) + facet_wrap(~consent_law, ncol=1, scales = "free_y") +
+  theme_light()
+
+```
+
+Vendo a variação em torno do ponto (pointrange)
+
+```{r}
+p <- ggplot(data=by_country, mapping=aes(x=reorder(country, donors_mean), y=donors_mean))
+p + geom_pointrange(mapping = aes(ymin=donors_mean - donors_sd, 
+                                  ymax=donors_mean + donors_sd)) +
+     coord_flip() + theme_light()
+
+```
+
+
+## Plotando com ggrepel para melhor escrever no gráfico. 
+Desenhando linhas no gráfico
+
+```{r, fig.width=10, fig.height=7}
+p <- ggplot(elections_historic, aes(x=popular_pct, y=ec_pct, label=winner_label))
+p +   
+    # desenha as linhas horizontal e vertical
+    geom_hline(yintercept=0.5, size=1.4, colour="gray80") + 
+    geom_vline(xintercept=0.5, size=1.4, colour="gray80") + 
+    # só chama os pontos depois das linhas para evitar que fiquem escondidos
+    geom_point() + 
+    # escreve os nomes com a library ggrpel
+    geom_text_repel() +
+    # Muda a escala para percentual em vez de proporção
+    scale_x_continuous(labels = percent) + 
+    scale_y_continuous(labels = percent) + 
+    labs(x = "Participação do vencedor no voto popular",
+         y = "Participação do vencedor nos votos do colégio eleitoral",
+         title="Eleições Presidenciais USA: Participação Popular e no Colégio Eleitoral",
+         subtitle="1824-2016",
+         caption="Data for 2016 are provisional")
+
+```
+
+
+## Labeling outliers and subseting data on the fly
+
+Etiqueta apenas os que tem gdp maior que 25.000 
+
+```{r}
+p <- ggplot(by_country, mapping = aes(x=gdp_mean, y=health_mean))
+
+p + geom_point() + 
+  theme_light() + 
+  # subseting the data just for labeling the observations we want
+  geom_text_repel(data = subset(by_country, gdp_mean > 25000), mapping =          aes(label=country))
+ 
+```
+
+## Faz um filtro mais complexo
+País que possui gdp_mean maior que 25000 OU health_mean menor que 1500 ou ainda é a Belgium 
+
+```{r}
+
+p + geom_point() + 
+  theme_light() + 
+  # subseting the data just for labeling the observations we want
+  geom_text_repel(data = subset(by_country, gdp_mean > 25000 | health_mean < 1500 | country %in% "Belgium"), mapping =          aes(label=country))
+
+```
+
+
+# Criando uma "dummy variable" para marcar algumas observações em especial
+
+```{r}
+# cria nossa dummy variable
+organdata$ind <- organdata$ccode %in% c("Ita", "Spa") & organdata$year > 1998
+p <-  ggplot(organdata, mapping = aes(x=roads, y=donors, color=ind))
+
+p + geom_point() + theme_light() + 
+   # label only where the dummy variable is true
+   geom_text_repel(data=subset(organdata, ind), mapping = aes(label=ccode)) +
+   # desativa os labels da cor
+   guides(label=FALSE, color=FALSE)
+
+```
+
+
+### Escrevendo e anotando na área do gráfico
+
+```{r, fig.width=10, fig.height=7}
+p <- ggplot(data=organdata, mapping=aes(x=roads, y=donors))
+
+p + geom_point() + annotate(geom = "text", x = 91, y = 33, label = "Uma taxa de recuperação \n surpreendetemente alta", hjust = 0) + theme_light()
+
+```
+
+Desenha um retângulo vermelho transparente
+
+```{r}
+p + geom_point() + annotate(geom = "text", x = 155, y = 33, label = "Uma taxa de recuperação \n surpreendetemente alta", hjust = 0) + 
+    annotate(geom="rect", xmin=125, xmax=155, ymin=30, ymax=35, fill="red", alpha=0.2) + 
+  theme_light()
+
+```
+
+
+
+
+## Refazendo o gráfico das eleições presidenciais dos US
+
+```{r, fig.width=10, fig.height=7}
+p <- ggplot(elections_historic, aes(x=popular_pct, y=ec_pct, label=winner_label, color=win_party))
+
+
+p + geom_point() + geom_text_repel(data=subset(elections_historic, year>=1992)) +
+   theme_gray() + 
+   scale_x_continuous(labels = percent) + 
+   scale_y_continuous(labels = percent) + 
+   labs(title = "Eleições presidenciais US - destaque desde 1992",
+        x = "% participação popular",
+        y = "% colégio eleitoral") +
+   scale_color_discrete(name="Partido") + 
+  annotate(geom="rect", xmin = 0.5, xmax=0.55, ymin = 0.70, ymax=0.80, alpha=0.2, fill="red")
+   
+  
+   
+
+```
+
+
+
+## Filhos por degree
+```{r, fig.width=10, fig.height=7}
+
+com_degree <- gss_sm[!is.na(gss_sm$degree), ] 
+
+
+filhos_by_degree <- com_degree %>% 
+                    group_by(degree) %>%
+                    summarize(Media = round(mean(childs, na.rm=TRUE), 2))
+filhos_by_degree
+
+
+p <- ggplot(filhos_by_degree, aes(x=reorder(degree, Media), y=Media,fill=degree, label=Media))
+
+p + geom_bar(stat="identity") + theme_light() + guides(fill=FALSE) + 
+   geom_text_repel()
+
+```
+
+
+
