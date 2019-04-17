@@ -25,8 +25,6 @@ compras$Data.Início.Vigência <- as.Date(dmy(compras$Data.Início.Vigência))
 compras$Data.Fim.Vigência <- as.Date(dmy(compras$Data.Fim.Vigência))
 compras$Data.Assinatura.Contrato <- as.Date(dmy(compras$Data.Assinatura.Contrato))
 compras$Data.Publicação.DOU <- as.Date(dmy(compras$Data.Publicação.DOU))
-
-
 # converte os valores numéricos
 compras$Valor.Final.Compra <- as.numeric(gsub(",", ".", compras$Valor.Final.Compra))
 compras$Valor.Inicial.Compra <- as.numeric(gsub(",", ".", compras$Valor.Inicial.Compra))
@@ -38,15 +36,38 @@ compras <- compras[compras$CNPJ.Contratado != -11,]
 compras$Objeto <- gsub("Objeto:", "", compras$Objeto)
 compras$Fundamento.Legal <- gsub("Fundamento legal:", "", compras$Fundamento.Legal, ignore.case = TRUE)
 
+cnpjs_sql <- NULL
+
+trata_cnpj <- function(x){
+    cat("x1 é isso:", x[1])
+    # se o cnpj é numérico
+    if (grepl(pattern = "[A-z]", x)) {
+      # acumula o cnpj na nossa lista de cnpjs para mandar ao SQL Server
+      cnpjs_sql <- paste(cnpjs_sql, "'", x, "'" ,",", sep = "")
+      cat("Variável:", cnpjs_sql)
+    } # if
+    
+}
+
+
+lapply(cnpj_nomes, trata_cnpj)
+#mostra a variável montada
+print(cnpjs_sql)
 
 
 # pega apenas o CNPJ
-x <- compras %>% select(CNPJ.Contratado, Nome.Contratado)
-cnpjs <- x$CNPJ.Contratado
+############
+cnpj_nomes <- compras %>% select(CNPJ.Contratado)
+# converte para caracter
+cnpj_nomes$CNPJ.Contratado <- as.character((cnpj_nomes$CNPJ.Contratado))
 
-# verifica se não temos apenas números
-#grepl(pattern = "[A-z]", "123")
 
+# transforma a coluna em vetor
+v <- pull(cnpj_nomes, CNPJ.Contratado)
+class(v)
+
+
+cnpjs <- cnpj_nomes$CNPJ.Contratado
 
 # verifica se temos cnpjs com algo além de números
 
@@ -73,7 +94,6 @@ cnpjs_sql <- paste("(", cnpjs_sql, ")", sep="")
 
 # Monta o Sql para trazer os dados das empresas
 sql <- paste("SELECT * FROM [BD_RECEITA].[dbo].[CNPJ] WHERE NUM_CNPJ IN", cnpjs_sql)
-
 
 ######
 # Vai até o LABCONTAS para trazer os dados
