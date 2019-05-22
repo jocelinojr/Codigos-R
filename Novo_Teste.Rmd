@@ -1,0 +1,105 @@
+---
+title: "Contratos Federais na Paraíba"
+author: ""
+output: 
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r message=FALSE}
+source("Processa_Compras_Siasg.R")
+library(knitr)
+```
+
+```{r }
+
+# conecta no banco Postgre
+con_postgre <- conecta_postgre(host = "10.10.15.73", dbname = "SEC_PB")
+anos <- c("2018", "2019")
+# pega os contratos  no siasg na Paraíba para um ou mais anos
+contr <- pega_cnpjs_siasg(con_postgre, ano=anos)
+
+
+# guarda as estaísticas principais para exibição
+
+vl_tota_contr <- sum(contr$valor_contratado)
+vl_med_contr <- mean(contr$valor_contratado)
+vl_min_contr <- min(contr$valor_contratado)
+vl_max_contr <- max(contr$valor_contratado)
+
+# agrupa para ver quem foram os maiores contratados 
+contratos_postgre_group <-  contr %>% 
+                            group_by(nome_do_fornecedor_contratado) %>%
+                            summarize(total = sum(valor_contratado)) %>%
+                            arrange(-total) 
+
+contratos_postgre_group$total_format <- formata_numero(contratos_postgre_group$total, cifrao = TRUE)
+
+# pega as uasg que contrataram
+contratos_uasg <- contr %>% 
+  group_by(desc_uasg_contratante) %>%
+  summarise(tot_contr = sum(valor_contratado)) %>%
+  arrange(-tot_contr)
+
+contratos_uasg$total_format <- formata_moeda(contratos_uasg$tot_contr)
+
+dbDisconnect(con_postgre)
+```
+
+*** 
+
+### **Estatísticas básicas** (`r anos`)
+- #### Total contratado: `r  formata_moeda(vl_tota_contr)`
+- #### Contrato Médio  :  `r  formata_moeda(vl_med_contr)`
+- #### Maior contrato  :  `r  formata_moeda(vl_max_contr)`
+- #### Menor contrato  :  `r  formata_moeda(vl_min_contr)`
+
+***
+
+```{r plot_contratos, fig.height=9, fig.width=14, fig.align="left"}
+anos_print <- str_c(anos, collapse = ",")
+
+p_contratos <- ggplot(head(contratos_postgre_group),mapping = aes(x=reorder(nome_do_fornecedor_contratado,total), y=total) )
+plot_contratos <- p_contratos +
+                  geom_bar(stat = "identity", width = .8, fill="#FF9933") +
+                  coord_flip() +
+                  guides(fill=FALSE) +
+                  scale_y_continuous(labels = formata_moeda) +
+                  theme_light() +
+                  labs(title = "Maiores Contratos com órgãos federais na Paraíba",
+                       subtitle = str_c("Contratos: ", anos_print),
+                       caption = "Fonte: Siasg",
+                       x = "",
+                       y = "Total Contratado")
+
+plot_contratos
+
+```
+
+### Maiores contratos com Fornecedores
+```{r results='asis'}
+library(knitr)
+
+
+contratos <- select(contratos_postgre_group,
+                        nome_do_fornecedor_contratado, total_format )
+names(contratos) <- c("Fornecedor", "Total Contratado")
+# kable(contratos) 
+contratos
+
+```
+***
+### Maiores órgãos contratantes
+
+
+```{r}
+  select(contratos_uasg, desc_uasg_contratante, total_format)
+
+```
+
+
+
