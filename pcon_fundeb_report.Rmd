@@ -1,0 +1,84 @@
+---
+title: "Produção de Conhecimento - FUNDEB"
+author: "Secretaria do TCU na Paraíba"
+date: "agosto de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+ knitr::opts_chunk$set(echo = FALSE)
+source("processa_folha.R")
+library(knitr)
+```
+
+### Apresentação
+Trata-se de produção de conhecimento solicitada pela SecexEducação acerca da aplicação dos recursos do Fundo de Manutenção e Desenvolvimento da Educação Básica - FUNDEB 
+
+### Objetivos:
+
+1. Obter conhecimento sobre a aplicação dos recursos do Fundeb.
+2. Saber de que forma o TCE-PB fiscaliza a aplicação desses recursos.
+3. Identificar lacunas de informação (aferir a qualidade e disponibilidade das bases de dados atuais tendo em vista uma futura auditoria de dados no Fundeb)
+
+### Objeto
+Conforme orientação da coordenação, a presente Produção de Conhecimento tem por objeto os dados
+estaduais da Paraíba e de um município a critério da Secretaria. Nesses termos, a Sec-PB 
+escolheu o município de **Brejo do Cruz**...
+
+
+### Visão Geral do Fundeb na Paraíba
+
+A partir de dados do Sistema do TCE-PB, acessível em https://sagres.tce.pb.gov.br/,  verifica-se  
+os montantes recebidos pelo estado e pelo município-alvo desde 2017 conforme tabela abaixo:
+
+```{r }
+  transf_fundeb <- carrega_transf_fundeb()
+  transf_fundeb$total_format <- NULL
+  transf_fundeb$ano <- factor(transf_fundeb$ano)
+  kable(transf_fundeb, caption = "**Valores recebidos do Fundeb 2017-2019**", 
+        col.names = c("Ano", "Ente", "Total (R$)"), 
+        format.args = list(big.mark=".", decimal.mark=","))
+
+```
+
+
+###  Folha de Pagamento estadual x Siope
+
+Os dados da folha de pagamento estadual e municipal podem ser obtidos na internet via sistema SAGRES. 
+
+**Os dados do Sistema de Informações sobre orçamentos públicos em educação (SIOPE) podem ser obtidos dos seguintes links:**
+
+* para o Estado:
+https://www.fnde.gov.br/siope/consultarRemuneracaoEstadual.do
+* Para os municípios:
+https://www.fnde.gov.br/siope/consultarRemuneracaoMunicipal.do
+
+**Observação:** deve-se converter o arquivo baixado de .xlsx para .csv
+
+
+#### Divergências Siope x Folha do Estado  
+
+Foram detectadas divergências entre os totais da folha de pagamento do estado em comparação com o Siope 
+conforme o gráfico abaixo
+
+```{r }
+  siope_folha <- pega_folha_siope_estado()
+ 
+  # gráfico dos valores da folha do estado
+  p <- ggplot(siope_folha, mapping = aes(ano, total))
+   g <-  p +
+      geom_bar(stat = "identity", aes(fill=origem), position = "dodge") +
+     scale_y_continuous(labels = formata_moeda) +
+      theme_light() +
+      labs(title = "Folha de pagamento x SIOPE (Estadual)",
+           subtitle = "2017 a 2018",
+           caption = "Fonte: SAGRES-PB",
+           x = "Ano",
+           y = "Total pago no ano")
+   g 
+
+```
+
+Ao se analisar os dados de 3 professores sorteados aleatoriamente, verifica-se que....
+
+A divergência pode ser explicada em razão da forma como os dados no SIOPE são classificados
